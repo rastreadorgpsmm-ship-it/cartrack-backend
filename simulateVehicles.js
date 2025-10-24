@@ -1,7 +1,7 @@
 const axios = require("axios");
 
 // Cambia por la IP de tu servidor
-const BACKEND_URL = "http://192.168.1.100:3000/update-location";
+const BACKEND_URL = "https://cartrack-backend-rthf.onrender.com";
 
 // Definimos vehículos de prueba
 let vehicles = [
