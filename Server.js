@@ -1,4 +1,3 @@
-// server.js
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -10,47 +9,51 @@ app.use(express.json());
 
 const server = http.createServer(app);
 
-// ✅ Configura CORS y versión de transporte compatible con Android (Socket.IO v2)
+// Socket.IO para enviar actualizaciones en tiempo real a la app Android
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  },
+  cors: { origin: "*" },
   transports: ["websocket", "polling"]
 });
 
 // Guardamos los datos de los vehículos
 let vehicles = {};
 
-// Endpoint REST: recibe ubicaciones del simulador
+// Endpoint REST: recibe ubicaciones del simulador o módulo GPS
 app.post("/update-location", (req, res) => {
-  const { deviceId, lat, lng, speed, ignition } = req.body;
-  if (!deviceId || !lat || !lng) return res.sendStatus(400);
+    const { deviceId, lat, lng, speed = 0, ignition = true } = req.body;
 
-  vehicles[deviceId] = { lat, lng, speed, ignition, lastUpdate: new Date() };
+    if (!deviceId || lat === undefined || lng === undefined) {
+        return res.status(400).json({ error: "Faltan datos esenciales" });
+    }
 
-  // ✅ Emitimos evento en tiempo real a todos los clientes conectados
-  io.emit("vehicle-update", { deviceId, lat, lng, speed, ignition });
-  console.log(`📡 Update ${deviceId}: ${lat}, ${lng}`);
+    vehicles[deviceId] = {
+        lat,
+        lng,
+        speed,
+        ignition,
+        lastUpdate: new Date()
+    };
 
-  res.sendStatus(200);
+    // Emitimos evento a todos los clientes conectados
+    io.emit("vehicle-update", vehicles[deviceId]);
+    console.log(`📍 ${deviceId} -> Lat:${lat}, Lng:${lng}, Speed:${speed}`);
+
+    res.sendStatus(200);
 });
 
 // Endpoint para obtener todos los vehículos actuales
 app.get("/vehicles", (req, res) => {
-  res.json(vehicles);
+    res.json(vehicles);
 });
 
 // Manejo de conexiones Socket.IO
 io.on("connection", (socket) => {
-  console.log("✅ Cliente conectado:", socket.id);
+    console.log("✅ Cliente conectado:", socket.id);
+    socket.emit("init", vehicles);
 
-  // Enviamos datos iniciales
-  socket.emit("init", vehicles);
-
-  socket.on("disconnect", () => {
-    console.log("❌ Cliente desconectado:", socket.id);
-  });
+    socket.on("disconnect", () => {
+        console.log("❌ Cliente desconectado:", socket.id);
+    });
 });
 
 const PORT = process.env.PORT || 3000;

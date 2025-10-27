@@ -1,7 +1,7 @@
 const axios = require("axios");
 
-// Endpoint correcto de tu servidor
-const BACKEND_URL = "https://cartrack-backend-rthf.onrender.com/update-location";
+// URL del backend en Render
+const BACKEND_URL = process.env.BACKEND_URL || "https://cartrack-backend-rthf.onrender.com/update-location";
 
 // Vehículos de prueba
 let vehicles = [
@@ -15,21 +15,21 @@ function moveVehicle(vehicle) {
   vehicle.lat += (Math.random() - 0.5) * 0.001;
   vehicle.lng += (Math.random() - 0.5) * 0.001;
   vehicle.speed = Math.floor(Math.random() * 60); // velocidad aleatoria
-  vehicle.ignition = true; // encendido siempre true para la prueba
+  vehicle.ignition = true; // encendido siempre true
   return vehicle;
 }
 
 // Función para enviar datos al servidor
 function sendUpdate(vehicle) {
   axios.post(BACKEND_URL, vehicle)
-    .then(() => console.log(`Actualizado: ${vehicle.deviceId}`))
-    .catch(err => console.error(`Error en ${vehicle.deviceId}: ${err.message}`));
+    .then(() => console.log(`📡 Actualizado: ${vehicle.deviceId}`))
+    .catch(err => console.error(`❌ Error en ${vehicle.deviceId}: ${err.message}`));
 }
 
-// Actualizar y enviar cada 2 segundos
+// Ejecutar cada 2 segundos
 setInterval(() => {
   vehicles = vehicles.map(moveVehicle);
   vehicles.forEach(sendUpdate);
 
-  console.log("Vehículos enviados:", vehicles.map(v => v.deviceId).join(", "));
+  console.log("🚀 Vehículos enviados:", vehicles.map(v => v.deviceId).join(", "));
 }, 2000);
